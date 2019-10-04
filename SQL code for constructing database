@@ -1,0 +1,346 @@
+#CREATE THE DATABASE
+
+CREATE DATABASE grocery_store;
+
+#SELECT DATABASE FOR USE
+USE grocery_store;
+
+#CREATE TABLES IN SPECIFIED ORDER
+------------------------
+#CUSTOMER TABLE
+------------------------
+CREATE TABLE customer
+	(
+	customer_id INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
+    fname varchar(50) default NULL,
+    lname varchar(50) default NULL,
+    dob datetime default NULL,
+	sex VARCHAR(1) default NULL,
+	email VARCHAR(50)default NULL,
+   address VARCHAR(50) default NULL
+	);
+
+#CLEANING AND CHECKING
+    drop table customer;
+    describe  customer;
+    select * from customer;
+------------------------
+#STAFF ROLE TABLE
+------------------------
+CREATE TABLE staff_role
+	(
+	title_id INT AUTO_INCREMENT PRIMARY KEY,
+	title_description varchar(40)
+	);
+    
+    #CLEANING AND CHECKING
+    drop table staff_role;
+    describe  staff_role;
+    select * from staff_role;
+    
+------------------------
+#BRANCH TABLE
+------------------------
+
+CREATE TABLE branch
+	(
+    branch_id INT PRIMARY KEY NOT NULL,
+    phone_number INT
+	);
+
+#CLEANING AND CHECKING
+    drop table branch;
+    describe  branch;
+    select * from branch;
+------------------------
+#STAFF TABLE
+------------------------
+CREATE TABLE staff
+	(
+	staff_id INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
+	fname VARCHAR(20) NOT NULL,
+	lname VARCHAR(20) NOT NULL,
+	start_date datetime NOT NULL,
+    email VARCHAR(50),
+    phone_number INT NOT NULL, 
+    address VARCHAR(50),
+    dob datetime,
+    sex VARCHAR(1),
+    PPSN INT ,
+    title_id int(10), 
+    branch_id int(10),
+    CONSTRAINT FK_title FOREIGN KEY(title_id)
+		references staff_role(title_id),
+    CONSTRAINT FK_branch FOREIGN KEY(branch_id)
+		references branch(branch_id)
+	);
+
+#CLEANING AND CHECKING
+    drop table staff;
+    describe  staff;
+    select * from staff;
+    
+------------------------
+#STAFF SALARY DETAIL TABLE
+------------------------
+CREATE TABLE staff_salary_detail
+	(
+	staff_id INT AUTO_INCREMENT,
+    salary int(10),
+	start_date datetime,
+    end_date datetime default '0000-00-00 00:00:00',
+    CONSTRAINT staff_salary_detail
+		PRIMARY KEY(staff_id, start_date),
+    CONSTRAINT FK_staff FOREIGN KEY(staff_id)
+		references staff(staff_id)
+	);
+
+------------------------
+#PRODUCT DESCRIPTION TABLE
+------------------------
+
+CREATE TABLE product_description (
+	product_id INT PRIMARY KEY,
+    brand_name VARCHAR (40),
+    manufacturer VARCHAR (40),
+    cost NUMERIC(6,2)
+    );
+    
+#CLEANING AND CHECKING
+    drop table product_description;
+    describe  product_descriptionl;
+    select * from product_description;
+------------------------
+#ITEM TABLE
+------------------------
+
+CREATE TABLE item (
+	item_id INT PRIMARY KEY NOT NULL,
+    product_id INT, 
+    expiry_date datetime,
+     CONSTRAINT FK_product_description FOREIGN KEY(product_id)
+		references product_description(product_id)
+    );
+
+#CLEANING AND CHECKING
+    drop table item;
+    describe  item;
+    select * from  item;
+------------------------
+#ITEM TRANSACTION TABLE
+------------------------
+
+CREATE TABLE item_transaction (
+	transaction_datetime datetime,
+    item_id  INT,
+    staff_id INT,
+    customer_id INT,
+    branch_id INT, 
+    refund_datetime datetime default '0000-00-00 00:00:00',
+	sales_amount decimal(6,2),
+    refund_amount  INT default 0,
+    CONSTRAINT item_transaction
+		PRIMARY KEY(transaction_datetime,item_id),
+    FOREIGN KEY(item_id) REFERENCES item(item_id) ON DELETE CASCADE,
+    FOREIGN KEY(staff_id) REFERENCES staff(staff_id) ON DELETE CASCADE,
+    FOREIGN KEY(customer_id) REFERENCES customer(customer_id) ON DELETE CASCADE,
+    FOREIGN KEY(branch_id) REFERENCES branch(branch_id) ON DELETE CASCADE
+    );
+    
+#CLEANING AND CHECKING
+    drop table item_transaction;
+    describe  item_transaction;
+    select * from  item_transaction;
+    
+--------------------------------
+#INSERT data into the tables,
+-----------------------------------
+#Because of all the foreign key relationships there's a specific order you have to follow when inserting data into tables
+#For this reason we'll populate all of the tables with no foreign keys first
+------------------------
+#CUSTOMER TABLE
+------------------------
+INSERT INTO `customer` (`customer_id`,`fname`,`lname`, `dob`,`sex`,`email`,`address`) VALUES(1,"Mary","Smith","1988-12-02 08:06:51","M","Vivamus.euismod@Maurisnondui.ca","Ap #719-7635 Laoreet Avenue");
+INSERT INTO `customer` (`customer_id`,`fname`,`lname`, `dob`,`sex`,`email`,`address`) VALUES(2,"Sue","Murphy","1963-01-04 05:57:29","F","auctor@cursus.com","P.O. Box 989, 5519 Dapibus Road");
+INSERT INTO `customer` (`customer_id`,`fname`,`lname`, `dob`,`sex`,`email`,`address`) VALUES(3,"John","Croft","1986-12-20 16:49:41","F","pharetra.Quisque@in.edu","720-4671 Blandit Rd.");
+INSERT INTO `customer` (`customer_id`,`fname`,`lname`, `dob`,`sex`,`email`,`address`) VALUES (4,"Sally","Kellett","1990-04-04 22:17:53","F","tortor.Nunc.commodo@adipiscingligula.org","4764 Enim. Ave");
+INSERT INTO `customer` (`customer_id`,`fname`,`lname`, `dob`,`sex`,`email`,`address`) VALUES(5,"Thomas","Bell","1964-02-15 14:21:52","F","ante.dictum.mi@aliquetdiamSed.org","5706 Odio. St.");
+INSERT INTO `customer` (`customer_id`,`fname`,`lname`, `dob`,`sex`,`email`,`address`) VALUES(6,"Richard","Higgins","1991-03-27 02:20:42","M","at.egestas@non.net","689-3581 Morbi Street");
+INSERT INTO `customer` (`customer_id`,`fname`,`lname`, `dob`,`sex`,`email`,`address`) VALUES (7,"Siobhan","Johnson","1980-09-04 08:29:07","F","adipiscing@leoVivamusnibh.com","293-824 Aliquam Road");
+INSERT INTO `customer` (`customer_id`,`fname`,`lname`, `dob`,`sex`,`email`,`address`) VALUES (8,"Bridgid","Thomson","1963-07-27 21:20:31","F","bibendum.Donec.felis@eleifendegestas.ca","5292 Lacinia. Street");
+INSERT INTO `customer` (`customer_id`,`fname`,`lname`, `dob`,`sex`,`email`,`address`) VALUES (9,"Bob","Franklin","1959-06-28 11:27:14","F","Sed@parturientmontes.com","7685 Dolor. Road");
+INSERT INTO `customer` (`customer_id`,`fname`,`lname`, `dob`,`sex`,`email`,`address`) VALUES (10,"Meryl","Streep","1992-02-22 19:37:42","F","et.magnis.dis@ullamcorpervelitin.net","317-7922 Ligula. St.");
+
+select * from customer;
+
+------------------------
+#STAFF ROLE TABLE
+------------------------
+INSERT INTO staff_role VALUES ('01', 'Check-Out Operator');
+INSERT INTO staff_role VALUES ('02', 'Supervisor');
+INSERT INTO staff_role VALUES ('03', 'Manager');
+
+#CHECKS ON INSERTION
+select * from staff_role;
+describe staff_role;
+select * from staff_role where title_id = 1;
+
+------------------------
+#BRANCH TABLE
+------------------------
+INSERT INTO branch VALUES ('1', '018319949');
+INSERT INTO branch VALUES('2', '018319457');
+
+#CHECKS ON INSERTION
+select * from branch;
+describe branch;
+select * from branch where branch_id = 1;
+------------------------
+#STAFF TABLE
+------------------------
+    
+INSERT INTO staff VALUES(101, 'Andy', 'Bernard', '1973-07-22', 'neque.Morbi.quis@lacusUtnec.com','0872109948', 'Ap #897-2852 Nec Ave', '1960-07-22', 'M', '8766549', 01, 1);
+INSERT INTO staff VALUES(102, 'Jim', 'Halpert', '1992-10-01', 'nonummy.Fusce.fermentum@hendrerit.org','0875678948', '204 Dolor Rd.', '1989-01-23', 'M', '8766549', 01, 1);
+INSERT INTO staff VALUES(103, 'Jenny', 'Dunne', '1969-09-05', 'tellus.justo@pretiumet.co.uk','0872737248', 'P.O. Box 106, 7998 Eget, St..', '1978-06-15', 'F', '5766549', 02, 1);
+INSERT INTO staff VALUES(104, 'Jim', 'Jacobs', '1973-07-22', 'et.euismod.et@eutelluseu.net','0872890948', '2633 Nulla. Rd.', '1967-02-18', 'M', '3266549', 03, 1);
+INSERT INTO staff VALUES(105, 'Michael', 'Levinson', '1964-03-15', 'orci.sem@NulladignissimMaecenas.ca','0872756748', 'P.O. Box 849, 5269 Non Rd.', '1956-04-12', 'M', '8216549', 01, 2);
+INSERT INTO staff VALUES(106, 'Jan', 'Purcell', '1964-03-15', 'luctus@adipiscinglacusUt.org','0872789778', 'P.O. Box 871, 1354 Ridiculus St.', '1968-12-26', 'F', '8386549', 01, 2);
+INSERT INTO staff VALUES(107, 'David', 'Wallace', '1961-05-11', 'volutpat.Nulla.dignissim@nequeetnunc.net','0872755948', 'P.O. Box 849, 5269 Non Rd.', '1989-10-22', 'M', '8766580', 01, 2);
+INSERT INTO staff VALUES(108, 'Rebecca', 'Halpert', '1967-01-17', 'farcu.iaculis.enim@imperdiet.co.uk','0872789948', 'P.O. Box 871, 1354 Ridiculus St.', '1978-04-21', 'F', '8326679', 03, 2);
+INSERT INTO staff VALUES(109, 'Jessica', 'Jones', '1998-02-17', 'Suspendisse@laoreet.net','0887689943', '9216 Ante. Road', '1992-09-13', 'F', '8322349', 01, 2);
+INSERT INTO staff VALUES(110, 'Kevin', 'Parker', '1982-06-20', 'sit@Crasdolordolor.org','0832189940', '791-8447 Vivamus St.', '1945-08-11', 'M', '5626549', 02, 2);
+
+#CHECKS ON INSERTION
+select * from staff;
+describe staff;
+
+#what roles do people have
+select staff_id, fname, lname, staff_role.title_description
+	from staff 
+		left join staff_role 
+        on staff.title_id = staff_role.title_id;
+        
+------------------------
+#PRODUCT
+------------------------
+insert into product_description values("1","chocolate","cadbury","6.5");
+insert into product_description values("2","bread","pat the baker","1.5");
+insert into product_description values("3","tea","barry's","2.99");
+insert into product_description values("4","milk","avonmore","0.89");
+
+#CHECKS ON INSERTION
+select * from product_description;
+describe product_description;
+
+------------------------
+#ITEM
+------------------------
+
+insert into item values("1","1","2020-01-01 00:00:00");
+insert into item values("2","1","2020-01-02 00:00:00");
+insert into item values("3","1","2020-01-03 00:00:00");
+insert into item values("4","1","2020-01-04 00:00:00");
+insert into item values("5","2","2019-11-08 00:00:00");
+insert into item values("6","2","2019-11-08 00:00:00");
+insert into item values("7","2","2019-11-08 00:00:00");
+insert into item values("8","3","2020-03-01 00:00:00");
+insert into item values("9","3","2020-03-02 00:00:00");
+insert into item values("10","4","2019-11-08 00:00:00");
+insert into item values("11","4","2019-11-08 00:00:00");
+
+#CHECKS ON INSERTION
+select * from item;
+describe item;
+
+------------------------
+#STAFF SALARY DETAIL
+------------------------
+
+insert into staff_salary_detail(staff_id, salary, start_date) values("101","32000","2018-01-01 00:00:00");
+insert into staff_salary_detail(staff_id, salary, start_date) values("102","33000","2018-01-02 00:00:00");
+insert into staff_salary_detail(staff_id, salary, start_date) values("105","34000","2018-01-01 00:00:00");
+insert into staff_salary_detail(staff_id, salary, start_date) values("106","35000","2018-01-02 00:00:00");
+insert into staff_salary_detail(staff_id, salary, start_date) values("107","36000","2018-01-01 00:00:00");
+insert into staff_salary_detail(staff_id, salary, start_date) values("109","37000","2018-01-02 00:00:00");
+insert into staff_salary_detail(staff_id, salary, start_date) values("104","42000","2018-01-01 00:00:00");
+insert into staff_salary_detail(staff_id, salary, start_date) values("108","43000","2018-01-02 00:00:00");
+insert into staff_salary_detail(staff_id, salary, start_date) values("103","54000","2018-01-01 00:00:00");
+insert into staff_salary_detail(staff_id, salary, start_date) values("110","55000","2018-01-01 00:00:00");
+
+#CHECKS ON INSERTION
+select * from staff_salary_detail;
+describe staff_salary_detail;
+drop table staff_salary_detail;
+
+------------------------
+#ITEM TRANSACTION
+------------------------
+select * from  `item_transaction`;
+INSERT INTO `item_transaction` (`transaction_datetime`,`item_id`,`staff_id`,`customer_id`,`branch_id`,`sales_amount`) 
+							VALUES ("2019-01-01 12:00:00",1,101,1,1,6.5);
+INSERT INTO `item_transaction` (`transaction_datetime`,`item_id`,`staff_id`,`customer_id`,`branch_id`,`sales_amount`) 
+							VALUES ("2019-01-01 12:00:01",2,101,1,1,6.5);
+INSERT INTO `item_transaction` (`transaction_datetime`,`item_id`,`staff_id`,`customer_id`,`branch_id`,`sales_amount`) 
+							VALUES ("2019-02-24 12:00:00","3","102","2","1","6.5");
+INSERT INTO `item_transaction` (`transaction_datetime`,`item_id`,`staff_id`,`customer_id`,`branch_id`,`sales_amount`) 
+							VALUES ("2019-02-25 12:00:00","4","102","3","1","6.5");
+INSERT INTO `item_transaction` (`transaction_datetime`,`item_id`,`staff_id`,`customer_id`,`branch_id`,`sales_amount`) 
+							VALUES ("2019-02-26 12:00:00","5","105","4","2","1.5");
+INSERT INTO `item_transaction` (`transaction_datetime`,`item_id`,`staff_id`,`customer_id`,`branch_id`,`sales_amount`) 
+							VALUES ("2019-02-27 12:00:00","6","105","5","2","1.5");
+INSERT INTO `item_transaction` (`transaction_datetime`,`item_id`,`staff_id`,`customer_id`,`branch_id`,`sales_amount`) 
+							VALUES ("2019-02-28 12:00:00","7","105","6","2","1.5");
+INSERT INTO `item_transaction` (`transaction_datetime`,`item_id`,`staff_id`,`customer_id`,`branch_id`,`sales_amount`) 
+							VALUES ("2019-03-01 12:00:00","8","106","7","2","2.99");
+INSERT INTO `item_transaction` (`transaction_datetime`,`item_id`,`staff_id`,`customer_id`,`branch_id`,`sales_amount`) 
+							VALUES ("2019-03-02 12:00:00","9","107","8","2","2.99");
+INSERT INTO `item_transaction` (`transaction_datetime`,`item_id`,`staff_id`,`customer_id`,`branch_id`,`sales_amount`) 
+							VALUES ("2019-03-03 12:00:00","10","109","9","2","0.89");
+INSERT INTO `item_transaction` (`transaction_datetime`,`item_id`,`staff_id`,`customer_id`,`branch_id`,`sales_amount`) 
+							VALUES ("2019-03-04 12:00:00","11","109","10","2","0.89");
+     
+#CHECKS ON INSERTION
+# Note: Date format is #mm/dd/yyyy
+select * from item_transaction;
+select * from item_transaction where transaction_datetime > '02/28/2019'; 
+
+----------------------------------
+#TESTING SOME DATA QUESTIONS/QUERIES
+----------------------------------      
+-- what customer spent the most on your business?
+	select customer_id, fname, lname, max(total_sales)
+	from
+		(
+		select a.customer_id, fname, lname, sum(sales_amount) as total_sales
+		from item_transaction a left join customer b on a.customer_id = b.customer_id 
+		group by 1,2,3
+		) a;
+        
+#what is the total sales grouped by month?        
+select DATE_FORMAT(date(transaction_Datetime), "%M %Y") as month_year, sum(sales_amount) as total_sales#, sum(cost)
+	from item_transaction a
+	group by 1;
+
+-- what customer spent the most on your business?
+select date(transaction_Datetime), sum(sales_amount)#, sum(cost)
+	from item_transaction a
+    left join item b on a.item_id = b.item_id
+    left join product_Description c on c.product_id = b.product_id
+	where date(transaction_Datetime) between DATE_SUB(NOW(), INTERVAL 30 DAY) AND NOW() ##yyyy-mm-dd
+	group by 1;
+    
+ -- which customer spent the most? 
+    select customer_id, fname, lname, max(total_sales)
+	from
+		(
+		select a.customer_id, fname, lname, sum(sales_amount) as total_sales
+		from item_transaction a left join customer b on a.customer_id = b.customer_id 
+		group by 1,2,3
+		) a;
+        
+#What is the male/female split amoungst customers?
+Select sex, count(*)
+from customer
+group by 1;
+
+
