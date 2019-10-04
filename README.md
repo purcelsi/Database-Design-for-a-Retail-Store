@@ -24,13 +24,9 @@ YOU DO NOT NEED TO WRITE THE SQL QUERIES. BUT YOUR DATABASE TABLES MUST BE DESIG
 
 See the final deliverables for the exact requirements of each section, this CA will take place over the course of one week.
 
-Higher Diploma in Data Analytics
-Introduction to Data Analytics
-Continuous Assignment 1
-Student Name: Siobhan Purcell
- Student Number: 18195342 
 
-#Solution and Design - The Grocery Food Store Project
+
+#Solution and Design to CA1 - The Grocery Food Store Project
 
 Background Introduction Into Chosen Business Model
 This project will be based on designing a database system for a small fictitious grocery food store. The core objective is to reorganise the company’s current data storage management system on all of their employee information and customer sales. All staff are divided between two branches and the company generates its revenue by selling food products to the customers. 
