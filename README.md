@@ -1,4 +1,4 @@
-# SQL-and-Relational-Database-Management-Systems
+# Entity Relationship Diagram
 
 BRIEF:
 CA1
