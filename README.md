@@ -26,6 +26,11 @@ See the final deliverables for the exact requirements of each section, this CA w
 
 
 
+
+
+
+
+
 #Solution and Design to CA1 - The Grocery Food Store Project
 
 Background Introduction Into Chosen Business Model
