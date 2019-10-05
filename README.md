@@ -1,16 +1,6 @@
 # Design and Development of a Retail Store Database System
 
-OVERVIEW
-
-For this project, I chose to design and develop a complete database for as Grocery Store as my retail business model of choice. 
-
-First, I generated an ERD diagram to establish the conceptual framework of the database and understand the relationships between all of the necessary tables. 
-
-
-##########################################################################
-
-
-#The Grocery Food Store Project
+The Grocery Food Store Project
 
 Background Introduction Into Chosen Business Model
 
