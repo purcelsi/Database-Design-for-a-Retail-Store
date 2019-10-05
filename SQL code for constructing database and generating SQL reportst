@@ -1,0 +1,826 @@
+#Student Name: Siobhan Purcell
+#Student No: 18195342
+#Assignment: 2019 Intro to Data Analytics CA2 (Retail Store Database)
+
+
+CREATE DATABASE grocery_store;
+#Drop database grocery_store;
+
+
+#SELECT DATABASE FOR USE
+USE grocery_store;
+
+
+#CREATE TABLES IN SPECIFIED ORDER
+
+
+------------------------
+#CUSTOMER TABLE
+------------------------
+
+#this table is at customer level and provides contact and personal information
+CREATE TABLE customer
+	(
+	customer_id INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
+    fname varchar(50) default NULL,
+    lname varchar(50) default NULL,
+    dob datetime default NULL,
+	sex VARCHAR(1) default NULL,
+	email VARCHAR(50)default NULL,
+   address VARCHAR(50) default NULL
+	);
+
+#CLEANING AND CHECKING
+   #drop table customer;
+   #describe  customer;
+   #select * from customer;
+
+
+------------------------
+#STAFF ROLE TABLE
+------------------------
+
+#this table is a reference table for staff titles, providing a name for each role
+CREATE TABLE staff_role
+	(
+	title_id INT AUTO_INCREMENT PRIMARY KEY,
+	title_description varchar(40)
+	);
+    
+    #CLEANING AND CHECKING
+ 	#drop table staff_role;
+ 	#describe  staff_role;
+	# select * from staff_role;
+
+
+------------------------
+#BRANCH TABLE
+------------------------
+
+#this table is at the store/branch level and provides address and contact information 
+CREATE TABLE branch
+	(
+    branch_id INT AUTO_INCREMENT PRIMARY KEY,
+    phone_number INT,
+    address VARCHAR (40)
+	);
+
+#CLEANING AND CHECKING
+    #drop table branch;
+    #describe  branch;
+    #select * from branch;
+
+
+------------------------
+#SUPPLIER TABLE
+------------------------
+
+#this table is at the supplier level and provides contact information
+CREATE TABLE supplier (
+  supplier_id INT AUTO_INCREMENT PRIMARY KEY,
+  supplier_name VARCHAR(40),
+  phone INT,
+  address VARCHAR(40)
+);
+
+
+#CLEANING AND CHECKING
+   # drop table supplier;
+   # describe  supplier;
+   # select * from supplier;
+    
+
+------------------------
+#STAFF TABLE
+------------------------
+
+#this table is at the staff level, providing contact information, personal information, start date, 
+#CURRENT role/title and CURRENT branch that they are working in
+CREATE TABLE staff
+	(
+	staff_id INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
+	fname VARCHAR(20) NOT NULL,
+	lname VARCHAR(20) NOT NULL,
+	start_date datetime NOT NULL,
+    email VARCHAR(50),
+    phone_number INT NOT NULL, 
+    address VARCHAR(50),
+    dob datetime,
+    sex VARCHAR(1),
+    PPSN INT ,
+    title_id int(10), 
+    branch_id int(10),
+    CONSTRAINT FK_title FOREIGN KEY(title_id)
+		references staff_role(title_id),
+    CONSTRAINT FK_branch FOREIGN KEY(branch_id)
+		references branch(branch_id)
+	);
+
+#CLEANING AND CHECKING
+    #drop table staff;
+    #describe  staff;
+    # select * from staff;
+    
+
+------------------------
+#STAFF SALARY DETAIL TABLE
+------------------------
+
+#this is at the level of a staff's title and salary at a given point time. 
+#used to reference a staff member's historical roles and earnings
+CREATE TABLE staff_salary_detail
+	(
+	staff_id INT AUTO_INCREMENT,
+    salary int(10),
+	start_date datetime,
+    end_date datetime default '0000-00-00 00:00:00',
+    CONSTRAINT staff_salary_detail
+		PRIMARY KEY(staff_id, start_date),
+    CONSTRAINT FK_staff FOREIGN KEY(staff_id)
+		references staff(staff_id)
+	);
+
+#CLEANING AND CHECKING
+ 	#select * from staff_salary_detail;
+
+
+------------------------
+#PRODUCT_INVENTORY TABLE
+------------------------
+
+
+#This table is at the product level and summarises the current stock count associated with that product. 
+#It is derived , or a summary of information from stock_item (see below) 
+#Current_inventory is calculated by counting the items grouped by productid from the stock_time table, taking into consideration lifetime events associated with that item:
+#Count(item_id) – (expiry_event + sales_event) group by product_id
+#for more information on 6his, see Appendix 1
+CREATE TABLE product_inventory (
+	product_id INT PRIMARY KEY,
+    product_name VARCHAR (40),
+    product_type VARCHAR (20),
+    weight NUMERIC (5,2),
+    weight_unit VARCHAR (5),
+    unit_cost NUMERIC(6,2),
+    vat NUMERIC(6,2),
+    price NUMERIC (6,2),
+    price_and_vat NUMERIC (6,2),
+ current_inventory NUMERIC (7,2),
+ supplier_id INT,
+ CONSTRAINT supplier FOREIGN KEY(supplier_id)
+		references supplier(supplier_id)
+    );
+    
+#CLEANING AND CHECKING
+    # drop table product_inventory;
+    # describe  product_inventory;
+    #select * from product_inventory;
+
+
+------------------------
+#STOCK_ITEM TABLE
+------------------------
+
+#Describes data at the stock level, or item_id; this details the lifetime activity of an item of stock 
+#until it leaves the store as a sale or expiration.
+# when either of these events occur, triggers will update these fields 
+#this table is used to populate PRODUCT_INVENTORY
+#for more information on 6his, see Appendix 1
+CREATE TABLE stock_item (
+	item_id INT PRIMARY KEY NOT NULL,
+    product_id INT,
+	supplier_id INT,
+    in_date datetime default '0000-00-00 00:00:00',
+    expiry_date datetime default '0000-00-00 00:00:00',
+    branch_id INT,
+    out_date datetime default '0000-00-00 00:00:00',
+    expiry_event bit,
+    sales_event bit,
+	FOREIGN KEY(product_id) REFERENCES product_inventory(product_id) ON DELETE CASCADE,
+    FOREIGN KEY(branch_id) REFERENCES branch(branch_id) ON DELETE CASCADE,
+    CONSTRAINT FK_supplier FOREIGN KEY(supplier_id)
+		references supplier(supplier_id)
+    );
+
+#CLEANING AND CHECKING
+    #drop table stock_item;
+    # describe  stock_item;
+    #select * from  stock_item;
+    
+
+------------------------
+#ITEM TRANSACTION_SUMMARY TABLE
+------------------------
+
+#This table is at the transaction level. It provides a summary on the lifetime of a transaction, from sale to refund. 
+#It is derived from the transaction_item_event table. 
+#Upon insertion of a sales row into the transaction_item_event table, transaction summary will create a new summary row for that transaction. 
+#Upon insertion of a refund row into the transaction_item_event table, transaction summary will UPDATE the above summary row for that transaction  
+#see Appendix 1 for more information
+CREATE TABLE transaction_summary (
+    transaction_id INT PRIMARY KEY NOT NULL,
+	transaction_timestamp datetime default '0000-00-00 00:00:00',
+    staff_id INT,
+    customer_id INT,
+    branch_id INT,
+    gross_sales_qty INT,
+    gross_sales_amount numeric (7,2),
+    refund_qty INT,
+    refund_amount numeric(7,2),
+    payment_type VARCHAR (10),
+    net_sales_qty INT,
+    net_sales_amount numeric (7,2),
+	CONSTRAINT FK_customer FOREIGN KEY(customer_id)
+		references customer(customer_id),
+    CONSTRAINT FK_staff2 FOREIGN KEY(staff_id)
+		references staff(staff_id),
+   CONSTRAINT FK_branch2 FOREIGN KEY(branch_id)
+	 references branch(branch_id)
+    );
+
+#CLEANING AND CHECKING
+     #drop table transaction_summary;
+     #describe  transaction_summary;
+     # select * from  transaction_summary;
+
+
+------------------------
+#TRANSACTION_ITEM_EVENT TABLE
+------------------------
+
+
+#Describes data at item-event level as associated with a customer transaction. 
+#Each row pertains to an item of stock that can either be sold or refunded. 
+#Transaction here is defined as either a sale or a refund. Gives information on the product, customer, staff, branch & transaction amount. 
+	#Upon sale of an item of stock, a new row will populate. Sale_event will be flagged as 1, refund event as 0. 
+	#Upon refund of an item of stock, a new row will populat, refund_event will be flagged as 1, sales event as 0. 
+	#Upon refund of an item of stock, was_refunded field for all rows associated with this item will be updated to 1. 
+		#This is designed to faciliate an item-level understanding of the refund status of an item. (could also be a new table – refund_status, containing item_id, refund_status)
+#see Appendix 1 for more information
+CREATE TABLE transaction_item_event (
+    item_id  INT,
+	transaction_timestamp datetime default '0000-00-00 00:00:00',
+    transaction_id INT,
+    product_id INT,
+    sales_event bit,
+    refund_event bit,
+    was_refunded bit,
+    transaction_amount_plus_vat decimal(6,2),
+    refund_amount numeric(7,2) default 0.00,
+    customer_id INT,
+    staff_id INT,
+    branch_id INT, 
+    CONSTRAINT transaction_item_event
+		PRIMARY KEY(transaction_timestamp, item_id),
+    FOREIGN KEY(transaction_id) REFERENCES transaction_summary(transaction_id) ON DELETE CASCADE,
+    FOREIGN KEY(product_id) REFERENCES product_inventory(product_id) ON DELETE CASCADE,
+	FOREIGN KEY(staff_id) REFERENCES staff(staff_id) ON DELETE CASCADE,
+    FOREIGN KEY(customer_id) REFERENCES customer(customer_id) ON DELETE CASCADE,
+    FOREIGN KEY(branch_id) REFERENCES branch(branch_id) ON DELETE CASCADE
+    );
+    
+#CLEANING AND CHECKING
+     #drop table transaction_item_event;
+     #describe  transaction_item_event;
+     #select * from  transaction_item_event;
+    
+
+
+--------------------------------
+#INSERT data into the tables,
+-------------------------------
+
+#Because of all the foreign key relationships there's a specific order you have to follow when inserting data into tables
+#For this reason we'll populate all of the tables with no foreign keys first
+
+
+------------------------
+#CUSTOMER TABLE
+------------------------
+INSERT INTO `customer` (`customer_id`,`fname`,`lname`, `dob`,`sex`,`email`,`address`) VALUES(1,"Mary","Smith","1988-12-02 08:06:51","F","Vivamus.euismod@Maurisnondui.ca","Ap #719-7635 Laoreet Avenue");
+INSERT INTO `customer` (`customer_id`,`fname`,`lname`, `dob`,`sex`,`email`,`address`) VALUES(2,"Sue","Murphy","1963-01-04 05:57:29","F","auctor@cursus.com","P.O. Box 989, 5519 Dapibus Road");
+INSERT INTO `customer` (`customer_id`,`fname`,`lname`, `dob`,`sex`,`email`,`address`) VALUES(3,"John","Croft","1986-12-20 16:49:41","M","pharetra.Quisque@in.edu","720-4671 Blandit Rd.");
+INSERT INTO `customer` (`customer_id`,`fname`,`lname`, `dob`,`sex`,`email`,`address`) VALUES (4,"Sally","Kellett","1990-04-04 22:17:53","F","tortor.Nunc.commodo@adipiscingligula.org","4764 Enim. Ave");
+INSERT INTO `customer` (`customer_id`,`fname`,`lname`, `dob`,`sex`,`email`,`address`) VALUES(5,"Thomas","Bell","1964-02-15 14:21:52","M","ante.dictum.mi@aliquetdiamSed.org","5706 Odio. St.");
+INSERT INTO `customer` (`customer_id`,`fname`,`lname`, `dob`,`sex`,`email`,`address`) VALUES(6,"Richard","Higgins","1991-03-27 02:20:42","M","at.egestas@non.net","689-3581 Morbi Street");
+INSERT INTO `customer` (`customer_id`,`fname`,`lname`, `dob`,`sex`,`email`,`address`) VALUES (7,"Siobhan","Johnson","1980-09-04 08:29:07","F","adipiscing@leoVivamusnibh.com","293-824 Aliquam Road");
+INSERT INTO `customer` (`customer_id`,`fname`,`lname`, `dob`,`sex`,`email`,`address`) VALUES (8,"Bridgid","Thomson","1963-07-27 21:20:31","F","bibendum.Donec.felis@eleifendegestas.ca","5292 Lacinia. Street");
+INSERT INTO `customer` (`customer_id`,`fname`,`lname`, `dob`,`sex`,`email`,`address`) VALUES (9,"Bob","Franklin","1959-06-28 11:27:14","M","Sed@parturientmontes.com","7685 Dolor. Road");
+INSERT INTO `customer` (`customer_id`,`fname`,`lname`, `dob`,`sex`,`email`,`address`) VALUES (10,"Meryl","Streep","1992-02-22 19:37:42","F","et.magnis.dis@ullamcorpervelitin.net","317-7922 Ligula. St.");
+INSERT INTO `customer` (`customer_id`,`fname`,`lname`, `dob`,`sex`,`email`,`address`) VALUES (11,"Bob","Hope","1992-01-21 12:12:42","M","MixMaster@crimefighter.org","Ap #900 66 Avoka St.");
+INSERT INTO `customer` (`customer_id`,`fname`,`lname`, `dob`,`sex`,`email`,`address`) VALUES (12,"Colleen","Hicks","1978-09-22 14:37:42","F","Hicks@tcd.ie","45 Franklin St.");
+
+#select * from customer;
+
+
+------------------------
+#STAFF ROLE TABLE
+------------------------
+
+INSERT INTO staff_role VALUES ('01', 'Check-Out Operator');
+INSERT INTO staff_role VALUES ('02', 'Supervisor');
+INSERT INTO staff_role VALUES ('03', 'Manager');
+
+#CHECKS ON INSERTION
+ #select * from staff_role;
+ #describe staff_role;
+ #select * from staff_role where title_id = 1;
+
+
+------------------------
+#BRANCH TABLE
+------------------------
+
+INSERT INTO branch VALUES ('1', '018319949', 'Killester, Howth Road, Dublin 5');
+INSERT INTO branch VALUES('2', '018319457', 'Raheny, Howth Road, Dublin 5');
+
+#CHECKS ON INSERTION
+#select * from branch;
+#describe branch;
+#select * from branch where branch_id = 1;
+
+
+------------------------
+#BRANCH_SUPPLIER TABLE
+------------------------
+
+INSERT INTO supplier VALUES(80, 'Cadburys', '8319949', 'Aspen Blvd');
+INSERT INTO supplier VALUES(81, 'Kraft Foods', '8319950', '13695 Alder St');
+INSERT INTO supplier VALUES(82, 'Quaker Oats', '8319951', '14496 Maple Way');
+INSERT INTO supplier VALUES(83, 'Avonmore', '8319952', '13636 Fir St');
+INSERT INTO supplier VALUES(84, 'Kellogs', '8319953', '341 Chestnut St' );
+INSERT INTO supplier VALUES(85, 'Tayto snacks', '8319954', '650 Beech St');
+INSERT INTO supplier VALUES(86, 'Danone', '8319955', '876 Holly St');
+
+#CHECKS ON INSERTION
+#select * from supplier;
+#describe supplier;
+#select * from supplier where supplier_id = 81;
+
+
+------------------------
+#STAFF TABLE
+------------------------
+    
+INSERT INTO staff VALUES(101, 'Andy', 'Bernard', '1973-07-22', 'neque.Morbi.quis@lacusUtnec.com','0872109948', 'Ap #897-2852 Nec Ave', '1960-07-22', 'M', '8766549', 01, 1);
+INSERT INTO staff VALUES(102, 'Jim', 'Halpert', '1992-10-01', 'nonummy.Fusce.fermentum@hendrerit.org','0875678948', '204 Dolor Rd.', '1989-01-23', 'M', '8766549', 01, 1);
+INSERT INTO staff VALUES(103, 'Jenny', 'Dunne', '1969-09-05', 'tellus.justo@pretiumet.co.uk','0872737248', 'P.O. Box 106, 7998 Eget, St..', '1978-06-15', 'F', '5766549', 02, 1);
+INSERT INTO staff VALUES(104, 'Jim', 'Jacobs', '1973-07-22', 'et.euismod.et@eutelluseu.net','0872890948', '2633 Nulla. Rd.', '1967-02-18', 'M', '3266549', 03, 1);
+INSERT INTO staff VALUES(105, 'Michael', 'Levinson', '1964-03-15', 'orci.sem@NulladignissimMaecenas.ca','0872756748', 'P.O. Box 849, 5269 Non Rd.', '1956-04-12', 'M', '8216549', 01, 2);
+INSERT INTO staff VALUES(106, 'Jan', 'Purcell', '1964-03-15', 'luctus@adipiscinglacusUt.org','0872789778', 'P.O. Box 871, 1354 Ridiculus St.', '1968-12-26', 'F', '8386549', 01, 2);
+INSERT INTO staff VALUES(107, 'David', 'Wallace', '1961-05-11', 'volutpat.Nulla.dignissim@nequeetnunc.net','0872755948', 'P.O. Box 849, 5269 Non Rd.', '1989-10-22', 'M', '8766580', 01, 2);
+INSERT INTO staff VALUES(108, 'Rebecca', 'Halpert', '1967-01-17', 'farcu.iaculis.enim@imperdiet.co.uk','0872789948', 'P.O. Box 871, 1354 Ridiculus St.', '1978-04-21', 'F', '8326679', 03, 2);
+INSERT INTO staff VALUES(109, 'Jessica', 'Jones', '1998-02-17', 'Suspendisse@laoreet.net','0887689943', '9216 Ante. Road', '1992-09-13', 'F', '8322349', 01, 2);
+INSERT INTO staff VALUES(110, 'Kevin', 'Parker', '1982-06-20', 'sit@Crasdolordolor.org','0832189940', '791-8447 Vivamus St.', '1945-08-11', 'M', '5626549', 02, 2);
+
+#CHECKS ON INSERTION
+#select * from staff;
+#describe staff;
+
+
+------------------------
+#PRODUCT INVENTORY
+------------------------
+
+insert into product_inventory values('21', 'wispa','chocolate', '0.25', 'kg', '2.50', '0.13','3.50', '3.63','100',80);
+insert into product_inventory values('22', 'kraft singles', 'cheese', '0.5', 'kg', '1.50','0.8', '2.50', '2.58','300',81);
+insert into product_inventory values('23', 'quaker', 'oatmeal','0.2', 'kg', '2.0','0.10','3.0', '3.10','200',82);
+insert into product_inventory values('24', 'avonmore milk', 'milk', '1', 'kg', '0.89','0.04', '2.0', '2.04','400',83);
+insert into product_inventory values('25', 'special k', 'cereal', '0.75', 'kg', '2','0.10', '4.5', '4.60','500',84);
+insert into product_inventory values('26', 'hula hoops', 'crisps', '0.10', 'kg', '0.5', '0.03','1.75','1.78', '350',85);
+insert into product_inventory values('27', 'actimel', 'yoghurt', '0.60', 'kg', '2.4','0.12', '3.0','3.12', '200',86);
+
+#CHECKS ON INSERTION
+#select * from product_inventory;
+#describe product_inventory;
+#drop table product_inventory;
+
+
+------------------------
+#STOCK_ITEM
+------------------------
+
+insert into stock_item values('51','22', '81', '2018-12-01 00:00:00', '2019-10-01 00:00:00', '1', '2019-01-23 12:00:00', 0, 1);
+insert into stock_item values('52','22', '81', '2018-12-01 00:00:00', '2019-10-01 00:00:00', '1', '2019-02-23 12:00:00', 0, 1);
+insert into stock_item values('53','23', '82', '2018-12-01 00:00:00', '2019-11-01 00:00:00', '2', '2019-03-23 12:00:00', 0, 1);
+insert into stock_item values('54','23', '82', '2018-12-01 00:00:00', '2019-11-01 00:00:00', '2', '2019-04-23 12:00:00', 0, 1);
+insert into stock_item values('55','23', '82', '2019-03-01 00:00:00', '2020-11-01 00:00:00', '2', '2019-05-23 12:00:00', 0, 1);
+insert into stock_item values('56','24', '83', '2019-03-01 00:00:00', '2020-01-01 00:00:00', '2', '2019-06-23 12:00:00', 0, 1);
+insert into stock_item values('57','25', '84', '2019-03-01 00:00:00', '2020-01-01 00:00:00', '2', '2019-07-23 12:00:00', 0, 1);
+insert into stock_item values('58','26', '85', '2019-03-01 00:00:00', '2020-01-01 00:00:00', '1', '2019-08-23 12:00:00', 0, 1);
+insert into stock_item values('59','27', '86', '2019-03-01 00:00:00', '2020-01-01 00:00:00', '1', '2019-09-23 12:00:00', 0, 1);
+insert into stock_item values('60','21', '80', '2019-12-01 00:00:00', '2020-12-30 00:00:00', '1', '2019-10-23 12:00:00', 0, 1);
+insert into stock_item values('61','21', '80', '2019-12-01 00:00:00', '2020-12-30 00:00:00', '1', '2019-10-23 12:00:10', 0, 1);
+insert into stock_item values('62','21', '80', '2019-12-01 00:00:00', '2020-12-30 00:00:00', '1', '2019-10-25 12:00:00', 0, 1);
+insert into stock_item values('63','21', '80', '2019-12-01 00:00:00', '2020-12-30 00:00:00', '1', '2019-11-26 12:00:00', 0, 1);
+insert into stock_item values('64','22', '81', '2019-12-01 00:00:00', '2020-05-15 00:00:00', '2', '2019-11-27 12:30:00', 0, 1);
+insert into stock_item values('65','22', '81', '2019-12-01 00:00:00', '2020-05-15 00:00:00', '2', '2019-11-28 12:00:00', 0, 1);
+insert into stock_item values('66','22', '81', '2019-12-01 00:00:00', '2020-05-15 00:00:00', '2', '2019-12-01 12:00:00', 0, 1);
+insert into stock_item values('67','23', '82', '2019-12-03 00:00:00', '2020-12-30 00:00:00', '2', '2019-12-02 12:00:00', 0, 1);
+insert into stock_item values('68','23', '82', '2019-12-03 00:00:00', '2020-12-30 00:00:00', '2', '2019-12-03 12:00:10', 0, 1);
+insert into stock_item values('69','26', '83', '2019-12-03 00:00:00', '2020-06-21 00:00:00', '2', '2019-12-05 12:00:00', 0, 1);
+insert into stock_item values('70','24', '83', '2019-12-03 00:00:00', '2020-12-03 00:00:00', '2', '2019-12-06 12:00:00', 0, 1);
+insert into stock_item values('71','25', '84', '2019-12-04 00:00:00', '2020-12-04 00:00:00', '2', '2019-12-07 12:00:00', 0, 1);
+insert into stock_item values('72','26', '85', '2019-12-05 00:00:00', '2020-12-07 00:00:00', '1', '2019-12-28 12:00:00', 0, 1);
+insert into stock_item values('73','27', '86', '2019-12-06 00:00:00', '2020-01-29 00:00:00', '1', '2019-12-28 12:00:00', 1, 0);
+insert into stock_item values('74','22', '81', '2019-12-01 00:00:00', '2020-05-15 00:00:00', '2', NULL , 0, 0); ## hypothetically these items have not been purchased
+insert into stock_item values('75','22', '81', '2019-12-01 00:00:00', '2020-05-15 00:00:00', '2', NULL , 0, 0); ## hypothetically these items have not been purchased
+insert into stock_item values('76','23', '82', '2019-12-03 00:00:00', '2020-12-30 00:00:00', '1', NULL , 0, 0); ## hypothetically these items have not been purchased
+insert into stock_item values('77','27', '86', '2019-12-06 00:00:00', '2019-01-29 00:00:00', '2', '2019-12-28 00:00:00' , 1, 0);
+
+
+#CHECKS ON INSERTION
+#select * from stock_item;
+#describe item;
+
+
+------------------------
+#STAFF SALARY DETAIL
+------------------------
+
+insert into staff_salary_detail(staff_id, salary, start_date) values("101","32000","2018-01-01 00:00:00");
+insert into staff_salary_detail(staff_id, salary, start_date) values("102","33000","2018-01-02 00:00:00");
+insert into staff_salary_detail(staff_id, salary, start_date) values("105","34000","2018-01-01 00:00:00");
+insert into staff_salary_detail(staff_id, salary, start_date) values("106","35000","2018-01-02 00:00:00");
+insert into staff_salary_detail(staff_id, salary, start_date) values("107","36000","2018-01-01 00:00:00");
+insert into staff_salary_detail(staff_id, salary, start_date) values("109","37000","2018-01-02 00:00:00");
+insert into staff_salary_detail(staff_id, salary, start_date) values("104","42000","2018-01-01 00:00:00");
+insert into staff_salary_detail(staff_id, salary, start_date) values("108","43000","2018-01-02 00:00:00");
+insert into staff_salary_detail(staff_id, salary, start_date) values("103","54000","2018-01-01 00:00:00");
+insert into staff_salary_detail(staff_id, salary, start_date) values("110","55000","2018-01-01 00:00:00");
+
+#CHECKS ON INSERTION
+#select * from staff_salary_detail;
+#describe staff_salary_detail;
+#drop table staff_salary_detail;
+
+
+------------------------
+#TRANSACTION_SUMMARY
+------------------------
+
+insert into transaction_summary values('1001', '2019-01-23 12:00:00', '102', '1','1', '1', '2.58', '0', '0','credit', '1', '2.58');
+insert into transaction_summary values('1002', '2019-02-23 12:00:00', '102', '2','1', '1', '2.58', '0', '0', 'credit', '1', '2.58');
+insert into transaction_summary values('1003', '2019-03-23 12:00:00', '105', '3','2', '1', '3.10', '0', '0', 'cash', '1',  '3.10');
+insert into transaction_summary values('1004', '2019-04-23 12:00:00', '105', '4','2', '1', '3.10', '0', '0', 'cash', '1', '3.10');
+insert into transaction_summary values('1005', '2019-05-23 12:00:00', '105', '5','2', '1', '3.10', '0', '0', 'debit', '1','3.10');
+insert into transaction_summary values('1006', '2019-06-23 12:00:00', '106', '6','2', '1','2.04', '0', '0', 'cash', '1', '2.04');
+insert into transaction_summary values('1007', '2019-07-23 12:00:00', '107', '7','2', '1', '4.60', '0', '0', 'cash', '1', '4.60');
+insert into transaction_summary values('1008', '2019-08-23 12:00:00', '109', '8','1', '1', '1.78', '0', '0', 'credit', '1', '1.78');
+insert into transaction_summary values('1009', '2019-09-23 12:00:00', '109', '9','1', '1',  '3.12', '0', '0', 'cash', '1', '3.12');
+insert into transaction_summary values('1010', '2019-10-23 12:00:00', '101', '2','1', '1', '3.63', '0', '0','cash', '1', '3.63');
+insert into transaction_summary values('1011', '2019-10-23 12:00:10', '101', '1','1', '1', '7.25', '1', '3.625','credit', '1', '3.63');
+insert into transaction_summary values('1012', '2019-10-25 12:00:00', '102', '2','1', '1', '3.63', '0', '0', 'credit', '1', '3.63');
+insert into transaction_summary values('1013', '2019-11-26 12:00:00', '105', '3','2', '1', '2.58', '0', '0', 'cash', '1',  '2.58');
+insert into transaction_summary values('1014', '2019-11-27 12:00:00', '105', '4','2', '1', '3.63', '0', '0', 'cash', '1', '3.63');
+insert into transaction_summary values('1015', '2019-11-28 12:00:00', '105', '5','2', '1', '3.10', '0', '0', 'debit', '1','3.10');
+insert into transaction_summary values('1016', '2019-12-01 12:00:00', '106', '6','2', '1','3.10', '0', '0', 'cash', '1', '3.10');
+insert into transaction_summary values('1017', '2019-12-02 12:00:00', '109', '7','2', '1', '4.60', '1', '4.60', 'cash', '0', '0');
+insert into transaction_summary values('1018', '2019-12-04 12:00:00', '109', '8','2', '1', '1.78', '0', '0', 'credit', '1', '1.78');
+insert into transaction_summary values('1019', '2019-12-05 12:00:00', '105', '9','2', '1',  '1.78', '0', '0', 'credit', '1', '1.78');
+insert into transaction_summary values('1020', '2019-12-06 12:00:00', '102', '10','1','1', '2.04', '0', '0', 'debit', '1', '2.04');
+insert into transaction_summary values('1021', '2019-12-07 12:00:00', '102', '11','1', '1', '4.60', '0', '0', 'debit', '1', '4.60');
+insert into transaction_summary values('1022', '2019-12-28 12:00:00', '101', '12','1', '1', '3.12', '1', '3.12', 'cash', '0', '0');
+
+
+#CHECKS ON INSERTION
+#select * from transaction_summary;
+#describe transaction_summary;
+#drop table transaction_summary;
+
+
+------------------------
+#TRANSACTION_ITEM_EVENT
+------------------------
+
+insert into transaction_item_event values('51', '2019-01-23 12:00:00', '1001', '22', 1,   0 ,  0 , '2.58', '0', '1','102', '1');
+insert into transaction_item_event values('52', '2019-02-23 12:00:00', '1002', '22', 1,   0 ,  0, '2.58', '0', '2','102', '1');
+insert into transaction_item_event values('53', '2019-03-23 12:00:00', '1003', '23', 1,   0,   0, '3.10', '0', '3','105', '2');
+insert into transaction_item_event values('54', '2019-04-23 12:00:00', '1004', '23', 1 ,  0 ,  0, '3.10',  '0', '4','105', '2');
+insert into transaction_item_event values('55', '2019-05-23 12:00:00', '1005', '23', 1 ,  0 ,  0 , '3.10', '0', '5','105', '2');
+insert into transaction_item_event values('56', '2019-06-23 12:00:00', '1006', '24', 1 ,  0 ,  0, '2.04', '0', '6','106', '2');
+insert into transaction_item_event values('57', '2019-07-23 12:00:00', '1007', '25', 1 ,  0 ,  0, '4.60', '0', '7','107', '2');
+insert into transaction_item_event values('58', '2019-08-23 12:00:00', '1008', '26', 1 ,  0 ,  0, '1.78', '0', '8','109', '1');
+insert into transaction_item_event values('59', '2019-09-23 12:00:00', '1009', '27', 1 ,  0 ,  0, '3.12', '0', '9','109', '1');
+insert into transaction_item_event values('60', '2019-10-23 12:00:00', '1010', '21', 1,  0 ,  0 , '3.63', '0', '2','101', '1');
+insert into transaction_item_event values('61', '2019-10-23 12:00:10', '1011', '21', 1,   0 , 1, '3.63', '0', '1','101', '1');
+insert into transaction_item_event values('61', '2019-10-24 12:00:20', '1011', '21', 0 ,  1 ,  1, '0', '3.63', '1','102', '1');
+insert into transaction_item_event values('62', '2019-10-25 12:00:00', '1012', '21', 1 ,  0 ,  0, '3.63', '0', '2','102', '1');
+insert into transaction_item_event values('63', '2019-11-26 12:00:00', '1013', '22', 1 ,  0 ,  0 , '2.58', '0', '3','105', '2');
+insert into transaction_item_event values('64', '2019-11-27 12:00:00', '1014', '21', 1 ,  0 ,  0, '3.63', '0', '4','105', '2');
+insert into transaction_item_event values('65', '2019-11-28 12:00:00', '1015', '23', 1 ,  0 ,  0, '3.10', '0', '5','105', '2');
+insert into transaction_item_event values('66', '2019-12-01 12:00:00', '1016', '23', 1 ,  0 ,  0, '3.10', '0', '6','106', '2');
+insert into transaction_item_event values('67', '2019-12-02 12:00:00', '1017', '25', 1 ,  0 ,  1, '4.60', '0', '7','107', '2');
+insert into transaction_item_event values('67', '2019-12-03 12:00:00', '1017', '25', 0 ,  1 ,  1 , '0','4.60', '7','109', '2');
+insert into transaction_item_event values('68', '2019-12-04 12:00:00', '1018', '26', 1 ,  0 ,  0 , '1.78', '0', '8','109', '2');
+insert into transaction_item_event values('69', '2019-12-05 12:00:00', '1019', '26', 1 ,  0 ,  0 , '1.78', '0', '9','105', '2');
+insert into transaction_item_event values('70', '2019-12-06 12:00:00', '1020', '24', 1 ,  0 ,  0 , '2.04', '0', '10','102', '1');
+insert into transaction_item_event values('71', '2019-12-07 12:00:00', '1021', '25', 1 ,  0 ,  0 , '4.60', '0', '12','101', '1');
+insert into transaction_item_event values('72', '2019-12-28 12:00:00', '1022', '27', 1 ,  0 , 1 , '3.12', '0', '12','101', '1');
+insert into transaction_item_event values('72', '2019-12-29 12:00:00', '1022', '27', 0 ,  1 , 1 , '0', '3.12', '12','101', '1');
+
+-----------------------------------------------------------------------------------------------------------------------------------
+
+----------------------
+#QUERIES TO DELIVER
+----------------------
+
+#1. (View) - Show all transactions for ANY given week (you decide the dates). 
+#2. (Trigger) - Create a Trigger that updates stock levels once a sale takes place. 
+#3. (View) - Create a View of all stock (grouped by the supplier) 
+#4. (Stored Procedure) - Detail and total all sales for the year, group these by each month. (A Group By with RollUp) 
+#5. (View) - Display the growth in sales (as a percentage) for your business, from the 1st month of opening until the end of the year. 
+#6. (Stored Procedure) - Create a stored procedure that will display all orders by customer and their county. 
+#7. (Stored Procedure) - Create a stored procedure that will display all returns, grouped by month.
+#8. (Stored Procedure) - Display a speciﬁc customers details and all of their relevant orders to date by passing a parameter (eg: CustomerID).	
+#9. (Trigger) - Create a Trigger that will populate a ‘history table’ once a customers contact details have been updated.	
+#10. (View) - Create  a View that will display a breakdown of (a) sales (b) proﬁt and (c) returns for each month of the year. 
+#11. After completing each of the individual reports, you are required to add all of the above scripts into one unique sql ﬁle that will run all of the scripts together and output the data into a Data Mart.
+
+
+-----------------------
+-- start
+-----------------------
+use grocery_store;
+
+#1. (View) - Show all transactions for ANY given week (you decide the dates).
+	#select * from transaction_summary;
+	#select * from product_inventory;
+    
+	CREATE or replace VIEW transaction_week_view AS
+		SELECT *
+			FROM transaction_summary
+				WHERE transaction_timestamp between '2019-12-02' and '2019-12-08';
+
+	#look at the view
+	select  *
+		FROM transaction_week_view;
+    
+    
+#2. (Trigger) - Create a Trigger that updates stock levels once a sale takes place. 
+
+	DELIMITER $$
+		CREATE TRIGGER UpdateStock
+		AFTER INSERT ON transaction_item_event
+			FOR EACH ROW
+			BEGIN
+			   UPDATE product_inventory
+			   SET current_inventory = current_inventory -1
+			   WHERE NEW.Product_id = Product_id;
+		END$$ 
+	DELIMITER ;
+
+#Now testing to see if trigger has been invoked. 
+#Inserting a mock value into the transaction_item_event table
+
+#First note that product_id 27 is a actimel yoghurt which is currently at a stock level of 200. 
+	select * from product_inventory;
+
+#as transaction item event uses existing stock items we need to update the stock
+	insert into stock_item values('78','27', '86', '2019-12-06 12:00:00', '2020-01-29 12:00:00', '2', '2019-12-30 12:00:00' , 0, 1);
+	insert into stock_item values('79','27', '86', '2019-12-06 12:00:00', '2020-01-29 12:00:00', '2', '2019-12-30 12:00:10' , 0, 1);
+
+#next, in this test scenario, a customer has purchased 2 items on the same day with a product_id of 27
+	insert into transaction_summary values('1023', '2019-09-30 12:00:00', '101', '12','1', '2', '6.24', '0', '0', 'cash', '1', '6.24');
+
+#updating transation_item_event to reflect the above scenario
+	insert into transaction_item_event values('78', '2019-12-30 12:00:00', '1023', '27', 1 ,  0 , 0 , '3.12', '0', '12','101', '1');
+	insert into transaction_item_event values('79', '2019-12-20 12:00:10', '1023', '27', 1 ,  0 , 0 , '3.12', '0', '12','101', '1');
+
+#Following these inserts, As you can see, the current_inventory for product id 27 (actimel) has now been updated from a stock level of 200 to 198.
+	select * from product_inventory;
+
+
+
+#3. (View) - Create a View of all stock (grouped by the supplier) 
+	#select  * from product_inventory;
+        
+	CREATE or replace VIEW total_stock_view AS
+		SELECT p.*, s.supplier_name
+	    	FROM product_inventory p
+	    		LEFT JOIN supplier s 
+	    			ON p.supplier_id = s.supplier_id;
+	
+	#look at the view
+	select  *
+	FROM total_stock_view;
+
+    
+#4. (Stored Procedure) - Detail and total all sales for the year, group these by each month. (A Group By with RollUp)
+
+	DELIMITER //
+		CREATE procedure GetsTotalAnnualSales()
+			BEGIN
+				SELECT 
+				coalesce (a.sales_month,'GrandTotal') AS sales_month, 
+				count(a.transaction_id) as total_sales
+					FROM 
+					(
+					select date_format(transaction_timestamp, "%M-%Y") as sales_month, transaction_id 
+					from transaction_summary
+					) a
+					group by sales_month with rollup;
+	END//
+
+
+	#run the procudure
+	Call GetsTotalAnnualSales();
+	#drop procedure
+	DROP PROCEDURE IF EXISTS GetsTotalAnnualSales;
+
+
+#5. (View) - Display the growth in sales (as a percentage) for your business, from the 1st month of opening until the end of the year. 
+	
+	#drop view
+	drop view MoM_growth;
+    
+    #create view
+    create or replace view MoM_growth_view as
+	#outer select, the final select for a tidy calculation
+	select 
+	month_year, 
+	current_Month_sales, 
+	round((current_last_month_sales_difference/last_month_sales)*100,1) as MoM_growth_percent #mysql was throwing errors so a sub-select was needed to cleanly retrieve the elements of this calculation
+		FROM
+		(
+			#one of two inner selects, see above comments for why this was needed
+			SELECT
+			month_year, 
+		    current_month_sales,
+			LAG(current_month_sales,1)        OVER w AS last_month_sales, #function to retrieve the previous month's sales using WINDOW on the month
+			current_month_sales - LAG(current_month_sales, 1)  OVER w AS current_last_month_sales_difference #this is a calc to get the difference between current month and last month, for reasons above it was easier #to retrieve these first before doing any calculations on them
+			FROM 
+		    (
+		        #innter select to deal with above issues
+		        select 
+		        date_format(transaction_timestamp,  '%y-%m') as month_year,
+		        sum(gross_sales_amount) as current_month_sales
+		           from transaction_summary
+		           group by 1
+		    ) a1
+		       WINDOW w AS (ORDER BY month_year)
+	    ) a2
+	 group by month_year;
+	
+	 #look at the view
+     select * from MoM_growth_view;
+    
+
+
+#6. (Stored Procedure) - Create a stored procedure #that will display all orders by customer and their county.
+
+	DELIMITER //
+		CREATE procedure GetsAllCustomers()
+			BEGIN
+				SELECT fname, lname, address, count(distinct(transaction_id)) as total_transactions, sum(gross_sales_qty) as total_items, sum(gross_sales_amount) as total_purchase_amount
+				FROM customer c
+					left join transaction_summary t on c.customer_id = t.customer_id
+						group by 1,2,3;
+	END//
+    
+    #call the procedure
+    Call GetsAllCustomers();
+    #drop the procedure
+	DROP PROCEDURE IF EXISTS GetsAllCustomers;
+    
+    
+#7. (Stored Procedure) - Create a stored procedure that will display all returns, grouped by month.
+
+	#this is what we want to see
+	#select * from transaction_item_event where refund_event = 1;
+
+	DELIMITER //
+		CREATE procedure GetsAllReturns()
+		BEGIN
+			SELECT date_format(transaction_timestamp, "%M %Y") AS Return_Month, t.*
+				FROM transaction_item_event t
+					WHERE refund_event = 1
+						group by return_month, transaction_id;
+	END//
+
+
+	
+	#call the procedure
+	Call GetsAllReturns();
+	#drop the procedure
+	DROP PROCEDURE IF EXISTS GetsAllReturns;
+
+
+#8. (Stored Procedure) - Display a speciﬁc customers details for those that had a transaction
+ 
+    DELIMITER //
+        CREATE PROCEDURE GetCustomer(IN cust_id VARCHAR(5))
+             BEGIN
+                 SELECT a.*
+                     FROM 
+                        transaction_summary a
+                         WHERE a.customer_id = cust_id;
+             END //
+    DELIMITER ;
+
+
+#As we can see, a customer with an customer_id of ‘2’ bought 2 items at different time events
+	select * from transaction_item_event;
+
+	#call the procedure
+	Call GetCustomer('2');
+	#drop the procedure
+	DROP PROCEDURE IF EXISTS GetCustomer;
+
+
+#9. (Trigger) - Create a Trigger that will populate a ‘history table’ once a customers contact details have been updated.
+
+#First create a new table called "history table" which will store changes that have been made to a customer's records from the customer table
+	CREATE TABLE history_table 
+	( 
+	    customer_id int (11) NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+	    fname varchar(50) NOT NULL, 
+	    lname varchar(5) NOT NULL,
+	    email varchar(50) NOT NULL,
+	    address varchar (50) NOT NULL,
+	    CustomerUpdateTime datetime DEFAULT NULL
+	 );
+
+	describe history_table;
+
+#Then create a UPDATE ON trigger to be invoked when an update is made to a customer's contact details from the customer table
+DELIMITER $$
+CREATE TRIGGER UpdateCustomer 
+    before UPDATE ON customer  
+    FOR EACH ROW BEGIN
+    
+    INSERT INTO history_table SET
+     customer_id = customer_id, 
+        fname = NEW.fname,
+        lname = NEW.lname,
+        email = NEW.email,
+        address = NEW.address,
+        CustomerUpdateTime = NOW()
+        ;
+END$$
+DELIMITER ;
+
+#testing trigger on by updating email address of the first customer in the customer table
+#Note that first the customer in the customer table, Mary Smith, has an email address of "Vivamus.euismod@Maurisnondui.ca" and home address of "Ap #719-7635 Laoreet Avenue"
+	select * from customer;
+
+#Updating Mary Smith's contact information
+	UPDATE customer 
+		SET email = 'purcelsi@tcd.ie', address = '192 ashcroft, raheny road, dublin 5'
+		WHERE customer_id = '1';
+
+#As you can see, Mary Smith's email and home address has been changed to the new data entry 
+	select * from customer;
+
+#And you can also see that the trigger has been invoked by populating the history table with the customer's updated information
+	select * from history_table;
+
+
+#10. (View) - Create  a View that will display a breakdown of (a) sales (b) proﬁt and (c) returns for each month of the year. 
+	
+	#after experimenting with a single join, it appeared that MYsql does not work well with calcualtions on functions and so an innter select was used to first retrieve "clean" data, or data 
+	#that was the output of these functions
+    
+    create or replace view sales_profits_returns as
+    select 
+		date_format(a.transaction_timestamp,  '%Y-%M') as sales_month_year,
+		sum(a.gross_sales_qty) as gross_sales_qty,
+		sum(a.gross_sales_amount) as gross_sales_amount,
+		sum(a.refund_qty) as refund_qty,
+		sum(a.refund_amount) as refund_amount,
+		sum(c.unit_cost) as unit_cost,
+		sum(a.gross_sales_amount) - (sum(a.refund_amount) + sum(c.unit_cost)) as profit
+			from transaction_summary a
+				left join transaction_item_event b on a.transaction_id = b.transaction_id and sales_event = 1
+				left join product_inventory c on b.product_id = c.product_id
+    group by sales_month_year ;
+    
+    #drop view
+	drop view sales_profits_returns;
+	#look at the view
+    select * from sales_profits_returns;
+
+
+#11. After completing each of the individual reports, you are required to add all of the above scripts into one unique sql ﬁle that will run all of the scripts together and output the data into a Data Mart.
+
+#drop database datamart;
+
+## Firstly, create our Data Mart database
+Create Database DataMart;
+#drop database datamart;
+
+
+# Connect to grocery_store database
+USE DataMart;
+
+# Next create a table within the new Data Mart database for each View SQL Query for the CA2 assignment 
+# Creating table in the datamart database and adding in testing scripts to show the result of Query 1, 3, 5, and 10
+Create Table DataMart.Query1_Data SELECT * FROM grocery_store.transaction_week_view;
+Create Table DataMart.Query3_Data SELECT * FROM grocery_store.total_stock_view;
+Create Table DataMart.Query5_Data SELECT * FROM grocery_store.MoM_growth_view;
+Create Table DataMart.Query10_Data SELECT * FROM grocery_store.sales_profits_returns;
+
+#Checking the final reports
+SELECT * FROM DataMart.Query1_Data;
+SELECT * FROM DataMart.Query3_Data;
+SELECT * FROM DataMart.Query5_Data;
+SELECT * FROM DataMart.Query10_Data;
