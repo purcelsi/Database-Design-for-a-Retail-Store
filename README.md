@@ -5,6 +5,7 @@ The Grocery Food Store Project
 Background Introduction Into Chosen Business Model
 
 This project will be based on designing a database system for a small fictitious grocery food store. The core objective is to reorganise the company’s current data storage management system on all of their employee information and customer sales. All staff are divided between two branches and the company generates its revenue by selling food products to the customers. 
+
 #Existing Database Storage System and Requirements
 Research into the business store’s underlying infrastructure, operations and processes revealed a number of key issues with its current data storage system. 
 
